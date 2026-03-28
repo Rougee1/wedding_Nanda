@@ -79,7 +79,7 @@ export const config = {
 
   // Google Sheets via Apps Script (see DEPLOY.md for setup instructions)
   googleSheets: {
-    endpoint: 'YOUR_GOOGLE_APPS_SCRIPT_URL',
+    endpoint: 'https://script.google.com/macros/s/AKfycbxXc4vcWoovwzKnWTZ41UD-CdBnij92iuAGHbzE7eoRTeY00mUsFDZyAxjo_fuhZ7TG/exec',
   },
 
   /** Video file: copy to public/Assets/ for Next.js static serving */
