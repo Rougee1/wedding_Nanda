@@ -84,7 +84,7 @@ export const config = {
 
   /** Video file: copy to public/Assets/ for Next.js static serving */
   invitationVideo: {
-    src: '/Assets/video Nanda Redoine.mp4',
+    src: '/Assets/wedding-video.mp4',
   },
 
   dressCode: {

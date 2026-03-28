@@ -436,22 +436,36 @@ function Slide5() {
   const [muted, setMuted] = useState(true)
   const [playing, setPlaying] = useState(false)
   const [showUnmute, setShowUnmute] = useState(false)
+  const [error, setError] = useState(false)
 
-  useEffect(() => {
+  const videoSrc = encodeURI(config.invitationVideo.src)
+
+  const attemptPlay = () => {
     const v = videoRef.current
     if (!v) return
-    // Start muted — always works, even without prior interaction
     v.muted = true
-    v.play()
-      .then(() => {
-        setPlaying(true)
-        // Show unmute button after 1s
-        setTimeout(() => setShowUnmute(true), 1000)
-      })
-      .catch(() => {})
+    v.load()
+    const playPromise = v.play()
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          setPlaying(true)
+          setError(false)
+          setTimeout(() => setShowUnmute(true), 1000)
+        })
+        .catch(() => {
+          setPlaying(false)
+        })
+    }
+  }
+
+  useEffect(() => {
+    const timer = setTimeout(attemptPlay, 500)
+    return () => clearTimeout(timer)
   }, [])
 
-  const handleUnmute = () => {
+  const handleUnmute = (e: React.MouseEvent) => {
+    e.stopPropagation()
     const v = videoRef.current
     if (!v) return
     v.muted = false
@@ -459,38 +473,35 @@ function Slide5() {
     setShowUnmute(false)
   }
 
-  const handleTap = () => {
+  const handleTap = (e: React.MouseEvent) => {
+    e.stopPropagation()
     const v = videoRef.current
     if (!v) return
-    if (!playing) {
-      v.muted = true
-      v.play().then(() => {
+    v.muted = true
+    v.load()
+    v.play()
+      .then(() => {
         setPlaying(true)
+        setError(false)
         setTimeout(() => setShowUnmute(true), 800)
-      }).catch(() => {})
-    }
+      })
+      .catch(() => setError(true))
   }
 
   return (
-    <div
-      className="absolute inset-0"
-      onClick={e => e.stopPropagation()}
-    >
+    <div className="absolute inset-0">
       <div className="absolute inset-0 bg-black" />
 
-      <motion.video
+      <video
         ref={videoRef}
         className="absolute inset-0 w-full h-full object-cover"
         playsInline
         muted
-        loop={false}
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-        transition={{ delay: 0.3, duration: 1.2 }}
-      >
-        <source src={encodeURI(config.invitationVideo.src)} type="video/mp4" />
-      </motion.video>
+        preload="auto"
+        src={videoSrc}
+        onError={() => setError(true)}
+      />
 
-      {/* Tap to start — si la vidéo n'a pas démarré */}
       {!playing && (
         <button
           type="button"
@@ -509,12 +520,11 @@ function Slide5() {
             </svg>
           </motion.span>
           <span className="text-xs uppercase tracking-[0.35em] font-sans" style={{ color: 'rgba(201,168,76,0.9)' }}>
-            Tap to play
+            {error ? 'Video not available — Tap to retry' : 'Tap to play'}
           </span>
         </button>
       )}
 
-      {/* Unmute button — apparaît après le démarrage */}
       {showUnmute && muted && (
         <motion.button
           type="button"
