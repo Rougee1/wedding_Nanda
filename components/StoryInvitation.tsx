@@ -548,7 +548,7 @@ export default function StoryInvitation() {
   return (
     <div
       ref={scrollRef}
-      className="h-screen overflow-y-scroll snap-y snap-mandatory"
+      className="h-screen overflow-y-scroll snap-y snap-proximity"
       style={{ scrollBehavior: 'smooth' }}
     >
       <Slide0 guest={guest} onOpen={handleOpen} />
