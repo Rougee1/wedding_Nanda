@@ -1,0 +1,69 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=Amiri:wght@400;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-playfair: 'Playfair Display', serif;
+  --font-inter: 'Inter', sans-serif;
+  --font-amiri: 'Amiri', serif;
+}
+
+@layer base {
+  body {
+    background-color: #f0e4e7;
+    @apply text-gray-900 font-sans;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white/90 backdrop-blur-sm rounded-2xl p-6 md:p-8 border border-white/60;
+    box-shadow: 0 8px 32px rgba(107, 26, 42, 0.10), 0 2px 8px rgba(0,0,0,0.05);
+  }
+  
+  .section-padding {
+    @apply py-12 md:py-20 px-4 md:px-6;
+  }
+  
+  .arabic-text {
+    @apply font-arabic text-2xl md:text-3xl leading-relaxed;
+  }
+
+  .gold-accent {
+    color: #c9a84c;
+  }
+
+  .gold-border {
+    border-color: rgba(201, 168, 76, 0.3);
+  }
+}
+
+/* Story interactive */
+@keyframes gradientShift {
+  0%   { background-position: 0% 50%;   }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%;   }
+}
+
+.slide-bg {
+  background-size: 400% 400%;
+  animation: gradientShift 12s ease infinite;
+}
+
+/* Le conteneur couvre tout l'écran, le header (z-50) s'affiche par-dessus */
+.story-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 100vh;
+  height: 100dvh;
+}
+
