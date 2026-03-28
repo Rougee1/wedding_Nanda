@@ -8,6 +8,8 @@ export default function Header() {
   const pathname = usePathname()
   const isHome = pathname === '/'
 
+  if (isHome) return null
+
   const navItems = [
     { href: '/programme', label: 'Program' },
   ]

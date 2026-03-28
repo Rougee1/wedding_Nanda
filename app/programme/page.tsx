@@ -12,7 +12,7 @@ export default function Programme() {
         <AnimateOnScroll>
           <p className="text-xs uppercase tracking-[0.3em] text-gold-600 font-sans mb-4">Schedule</p>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif text-bordeaux-800 mb-4 tracking-wide font-light">
-            Program of the Day
+            The Nikkah Ceremony
           </h1>
           <p className="text-gray-600 max-w-xl mx-auto">
             {coupleName} — {fullDate}
@@ -25,33 +25,17 @@ export default function Programme() {
         <AnimateOnScroll>
           <div className="card max-w-2xl mx-auto border border-gold-200/30">
             <p className="text-xs uppercase tracking-[0.2em] text-gold-600 font-sans mb-6">{venueName}</p>
-            <div className="space-y-0">
-              {config.program.map((event, index) => {
-                const isLast = index === config.program.length - 1
-                return (
-                  <AnimateOnScroll key={index} delay={index * 0.1} direction="left">
-                    <div className="flex gap-6">
-                      {/* Heure */}
-                      <div className="flex-shrink-0 w-20 text-right pt-0.5">
-                        <p className="text-sm font-serif font-semibold text-gold-600">
-                          {event.time}
-                        </p>
-                      </div>
-
-                      {/* Timeline line + dot */}
-                      <div className={`relative flex-1 border-l-2 border-gold-200/60 pl-6 ${isLast ? 'pb-0' : 'pb-8'}`}>
-                        <div className="absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full bg-gold-400 ring-2 ring-white" />
-                        <h3 className="font-serif text-bordeaux-800 text-lg leading-tight mb-1">
-                          {event.title}
-                        </h3>
-                        <p className="text-gray-500 text-sm leading-relaxed">
-                          {event.description}
-                        </p>
-                      </div>
-                    </div>
-                  </AnimateOnScroll>
-                )
-              })}
+            <div className="space-y-4">
+              <div className="flex gap-6">
+                <div className="flex-shrink-0 w-20 text-right pt-0.5">
+                  <p className="text-sm font-serif font-semibold text-gold-600">{config.event.time}</p>
+                </div>
+                <div className="relative flex-1 border-l-2 border-gold-200/60 pl-6">
+                  <div className="absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full bg-gold-400 ring-2 ring-white" />
+                  <h3 className="font-serif text-bordeaux-800 text-lg leading-tight mb-1">Nikkah Ceremony</h3>
+                  <p className="text-gray-500 text-sm leading-relaxed">{config.venue.fullAddress}</p>
+                </div>
+              </div>
             </div>
           </div>
         </AnimateOnScroll>
