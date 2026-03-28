@@ -73,8 +73,8 @@ export const config = {
 
   // Contact information
   contact: {
-    email: 'nanda.wedding@gmail.com',
-    phone: '+1 (555) 123-4567',
+    email: 'shabrinananda027@gmail.com',
+    phone: '+62 815-8619-3720',
   },
 
   // Google Sheets via Apps Script (see DEPLOY.md for setup instructions)

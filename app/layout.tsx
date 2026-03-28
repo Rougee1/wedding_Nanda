@@ -24,8 +24,8 @@ const amiri = Amiri({
 })
 
 export const metadata: Metadata = {
-  title: 'Nanda & Partner - Wedding Invitation',
-  description: 'You are cordially invited to celebrate our union',
+  title: 'Nanda & Redoine - Wedding Invitation',
+  description: 'You are cordially invited to celebrate the union of Nanda & Redoine',
 }
 
 export default function RootLayout({
