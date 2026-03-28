@@ -433,19 +433,43 @@ function Slide4({ guest, onConfirmed }: { guest: string, onConfirmed: () => void
 // ─── Slide 5 — Video (unlocked after RSVP) ───────────────────────────────────
 function Slide5() {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const [needsTap, setNeedsTap] = useState(false)
-
-  const tryPlay = () => {
-    const v = videoRef.current
-    if (!v) return
-    v.play()
-      .then(() => setNeedsTap(false))
-      .catch(() => setNeedsTap(true))
-  }
+  const [muted, setMuted] = useState(true)
+  const [playing, setPlaying] = useState(false)
+  const [showUnmute, setShowUnmute] = useState(false)
 
   useEffect(() => {
-    tryPlay()
+    const v = videoRef.current
+    if (!v) return
+    // Start muted — always works, even without prior interaction
+    v.muted = true
+    v.play()
+      .then(() => {
+        setPlaying(true)
+        // Show unmute button after 1s
+        setTimeout(() => setShowUnmute(true), 1000)
+      })
+      .catch(() => {})
   }, [])
+
+  const handleUnmute = () => {
+    const v = videoRef.current
+    if (!v) return
+    v.muted = false
+    setMuted(false)
+    setShowUnmute(false)
+  }
+
+  const handleTap = () => {
+    const v = videoRef.current
+    if (!v) return
+    if (!playing) {
+      v.muted = true
+      v.play().then(() => {
+        setPlaying(true)
+        setTimeout(() => setShowUnmute(true), 800)
+      }).catch(() => {})
+    }
+  }
 
   return (
     <div
@@ -457,36 +481,54 @@ function Slide5() {
       <motion.video
         ref={videoRef}
         className="absolute inset-0 w-full h-full object-cover"
-        autoPlay
         playsInline
-        controls={needsTap}
-        muted={false}
-        style={{ pointerEvents: needsTap ? 'auto' : 'none' }}
+        muted
+        loop={false}
         initial={{ opacity: 0 }} animate={{ opacity: 1 }}
         transition={{ delay: 0.3, duration: 1.2 }}
-        onCanPlay={tryPlay}
-        onLoadedData={tryPlay}
       >
         <source src={encodeURI(config.invitationVideo.src)} type="video/mp4" />
       </motion.video>
 
-      {needsTap && (
+      {/* Tap to start — si la vidéo n'a pas démarré */}
+      {!playing && (
         <button
           type="button"
-          className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-black/50 text-white"
-          onClick={() => {
-            tryPlay()
-          }}
+          className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4"
+          style={{ background: 'rgba(0,0,0,0.55)' }}
+          onClick={handleTap}
         >
-          <span className="rounded-full p-5" style={{ backgroundColor: 'rgba(201,168,76,0.25)' }}>
+          <motion.span
+            className="rounded-full p-5"
+            style={{ backgroundColor: 'rgba(201,168,76,0.25)', border: '2px solid rgba(201,168,76,0.4)' }}
+            animate={{ scale: [1, 1.08, 1] }}
+            transition={{ repeat: Infinity, duration: 1.8 }}
+          >
             <svg className="w-14 h-14" fill="currentColor" viewBox="0 0 24 24" style={{ color: '#c9a84c' }}>
               <path d="M8 5v14l11-7z" />
             </svg>
-          </span>
+          </motion.span>
           <span className="text-xs uppercase tracking-[0.35em] font-sans" style={{ color: 'rgba(201,168,76,0.9)' }}>
             Tap to play
           </span>
         </button>
+      )}
+
+      {/* Unmute button — apparaît après le démarrage */}
+      {showUnmute && muted && (
+        <motion.button
+          type="button"
+          onClick={handleUnmute}
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-5 py-2.5 rounded-full"
+          style={{ background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(201,168,76,0.4)', backdropFilter: 'blur(8px)' }}
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" style={{ color: '#c9a84c' }}>
+            <path d="M16.5 12A4.5 4.5 0 0014 7.97v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.796 8.796 0 0021 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06A8.99 8.99 0 0017.73 18L19.73 20 21 18.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+          </svg>
+          <span className="text-xs uppercase tracking-[0.25em] font-sans text-white/80">Tap to unmute</span>
+        </motion.button>
       )}
     </div>
   )
