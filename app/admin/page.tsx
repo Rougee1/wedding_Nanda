@@ -5,7 +5,32 @@ import { useState, useEffect } from 'react'
 const PASSWORD = 'NandaRedoine'
 const BASE_URL = 'https://nandaredoine.com'
 
-type Guest = { name: string; copied: boolean }
+const DEFAULT_MESSAGE = `Bismillahirrahmanirrahim
+Assalamualaikum Warahmatullahi Wabarakatuh
+
+Kepada Yth. Bapak/Ibu/Saudara/i,
+{NAME}
+
+Tanpa mengurangi rasa hormat, dengan memohon rahmat dan ridho Allah SWT, kami mengundang Bapak/Ibu/Saudara/i untuk menghadiri acara pernikahan kami yang akan diselenggarakan pada:
+
+📅 Hari, Tanggal: Sabtu, 11 April 2026
+📍 Tempat: Jati by Janan Resto: Jl. Arteri Andara Raya No. 24, Tol Desari, Kec. Cinere, Kota Depok, Jawa Barat
+
+Terukir kesan yang dalam di hati kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu pada hari bahagia kami.
+
+Detail acara dapat diakses melalui link dibawah ini:
+
+{LINK}
+
+Terima kasih kami sampaikan atas perhatian dan doa restu Bapak/Ibu/Saudara/i.
+
+Kami yang berbahagia,
+Redoine & Nanda
+Beserta Keluarga
+
+Wassalamualaikum Warahmatullahi Wabaarakaatuh`
+
+type Guest = { name: string }
 
 export default function AdminPage() {
   const [authenticated, setAuthenticated] = useState(false)
@@ -15,12 +40,26 @@ export default function AdminPage() {
   const [guestName, setGuestName] = useState('')
   const [guests, setGuests] = useState<Guest[]>([])
   const [justCopied, setJustCopied] = useState<string | null>(null)
+  const [messageTemplate, setMessageTemplate] = useState(DEFAULT_MESSAGE)
+  const [showEditor, setShowEditor] = useState(false)
 
   useEffect(() => {
     if (sessionStorage.getItem('admin_auth') === '1') {
       setAuthenticated(true)
     }
+    const saved = localStorage.getItem('wedding_msg_template')
+    if (saved) setMessageTemplate(saved)
   }, [])
+
+  const saveTemplate = (val: string) => {
+    setMessageTemplate(val)
+    localStorage.setItem('wedding_msg_template', val)
+  }
+
+  const resetTemplate = () => {
+    setMessageTemplate(DEFAULT_MESSAGE)
+    localStorage.removeItem('wedding_msg_template')
+  }
 
   const login = () => {
     if (passwordInput === PASSWORD) {
@@ -41,6 +80,13 @@ export default function AdminPage() {
   const buildLink = (name: string) =>
     `${BASE_URL}/?n=${encodeURIComponent(name)}`
 
+  const buildMessage = (name: string) => {
+    const link = buildLink(name)
+    return messageTemplate
+      .replace(/\{NAME\}/g, name)
+      .replace(/\{LINK\}/g, link)
+  }
+
   const addGuest = () => {
     const trimmed = guestName.trim()
     if (!trimmed) return
@@ -48,14 +94,19 @@ export default function AdminPage() {
       setGuestName('')
       return
     }
-    setGuests(prev => [{ name: trimmed, copied: false }, ...prev])
+    setGuests(prev => [{ name: trimmed }, ...prev])
     setGuestName('')
   }
 
-  const copyLink = async (name: string) => {
-    const link = buildLink(name)
-    await navigator.clipboard.writeText(link)
+  const copyMessage = async (name: string) => {
+    await navigator.clipboard.writeText(buildMessage(name))
     setJustCopied(name)
+    setTimeout(() => setJustCopied(null), 2000)
+  }
+
+  const copyLink = async (name: string) => {
+    await navigator.clipboard.writeText(buildLink(name))
+    setJustCopied(`link-${name}`)
     setTimeout(() => setJustCopied(null), 2000)
   }
 
@@ -64,21 +115,18 @@ export default function AdminPage() {
   }
 
   const whatsappUrl = (name: string) => {
-    const link = buildLink(name)
-    const msg = encodeURIComponent(
-      `ٱلسَّلَامُ عَلَيْكُمْ ${name} 🤍\n\nWe would be honoured to have you join us on our special day.\n\n${link}`
-    )
+    const msg = encodeURIComponent(buildMessage(name))
     return `https://wa.me/?text=${msg}`
   }
 
   const smsUrl = (name: string) => {
-    const link = buildLink(name)
-    const msg = encodeURIComponent(`Your personalised invitation: ${link}`)
+    const msg = encodeURIComponent(buildMessage(name))
     return `sms:?body=${msg}`
   }
 
   const currentLink = guestName.trim() ? buildLink(guestName.trim()) : ''
 
+  // ─── Login screen ──────────────────────────────────────────────────────────
   if (!authenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4"
@@ -125,6 +173,7 @@ export default function AdminPage() {
     )
   }
 
+  // ─── Main admin panel ──────────────────────────────────────────────────────
   return (
     <div className="min-h-screen px-4 py-10"
       style={{ background: 'linear-gradient(-45deg, #060508, #100a12, #140c10, #0a080e)' }}>
@@ -145,6 +194,55 @@ export default function AdminPage() {
           >
             Sign out
           </button>
+        </div>
+
+        {/* Message template editor */}
+        <div className="rounded-2xl p-6 mb-6 border border-white/10"
+          style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(12px)' }}>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs uppercase tracking-[0.2em]"
+              style={{ color: 'rgba(201,168,76,0.7)' }}>
+              Message template
+            </p>
+            <button
+              onClick={() => setShowEditor(!showEditor)}
+              className="text-xs font-sans px-3 py-1 rounded-lg transition-colors"
+              style={{ color: 'rgba(201,168,76,0.8)', border: '1px solid rgba(201,168,76,0.2)' }}
+            >
+              {showEditor ? 'Hide' : 'Edit'}
+            </button>
+          </div>
+
+          <p className="text-white/30 text-[10px] mb-3">
+            Use <span className="font-mono text-white/50">{'{NAME}'}</span> for guest name and <span className="font-mono text-white/50">{'{LINK}'}</span> for the invitation link.
+          </p>
+
+          {showEditor ? (
+            <>
+              <textarea
+                value={messageTemplate}
+                onChange={e => saveTemplate(e.target.value)}
+                rows={18}
+                className="w-full px-4 py-3 rounded-lg text-white/90 text-sm font-sans outline-none resize-y leading-relaxed"
+                style={{
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                }}
+              />
+              <button
+                onClick={resetTemplate}
+                className="mt-2 text-xs font-sans px-3 py-1 rounded-lg transition-colors"
+                style={{ color: 'rgba(255,255,255,0.3)', border: '1px solid rgba(255,255,255,0.08)' }}
+              >
+                Reset to default
+              </button>
+            </>
+          ) : (
+            <div className="px-4 py-3 rounded-lg text-white/50 text-xs font-sans whitespace-pre-wrap leading-relaxed max-h-32 overflow-y-auto"
+              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              {messageTemplate.slice(0, 200)}...
+            </div>
+          )}
         </div>
 
         {/* Generator */}
@@ -181,18 +279,30 @@ export default function AdminPage() {
           {/* Live preview */}
           {currentLink && (
             <div className="mt-4 p-3 rounded-lg" style={{ background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.15)' }}>
-              <p className="text-xs uppercase tracking-[0.15em] mb-1" style={{ color: 'rgba(201,168,76,0.6)' }}>
+              <p className="text-xs uppercase tracking-[0.15em] mb-2" style={{ color: 'rgba(201,168,76,0.6)' }}>
                 Preview
               </p>
-              <p className="text-white/70 text-xs font-mono break-all">{currentLink}</p>
 
-              <div className="flex flex-wrap gap-2 mt-3">
+              <div className="px-3 py-2 rounded-lg mb-3 text-white/60 text-xs font-sans whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto"
+                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                {buildMessage(guestName.trim())}
+              </div>
+
+              <div className="flex flex-wrap gap-2">
                 <button
-                  onClick={() => copyLink(guestName.trim())}
+                  onClick={() => copyMessage(guestName.trim())}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-sans uppercase tracking-wider transition-all"
                   style={{ backgroundColor: '#c9a84c', color: '#0a0005', fontWeight: 600 }}
                 >
-                  {justCopied === guestName.trim() ? '✓ Copied!' : 'Copy link'}
+                  {justCopied === guestName.trim() ? '✓ Copied!' : 'Copy message'}
+                </button>
+
+                <button
+                  onClick={() => copyLink(guestName.trim())}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-sans uppercase tracking-wider transition-all"
+                  style={{ backgroundColor: 'rgba(201,168,76,0.15)', color: '#c9a84c', fontWeight: 600, border: '1px solid rgba(201,168,76,0.25)' }}
+                >
+                  {justCopied === `link-${guestName.trim()}` ? '✓ Copied!' : 'Copy link only'}
                 </button>
 
                 <a
@@ -248,7 +358,8 @@ export default function AdminPage() {
 
                   <div className="flex items-center gap-2 shrink-0">
                     <button
-                      onClick={() => copyLink(g.name)}
+                      onClick={() => copyMessage(g.name)}
+                      title="Copy full message"
                       className="px-3 py-1.5 rounded-lg text-xs font-sans uppercase tracking-wider transition-all"
                       style={{
                         backgroundColor: justCopied === g.name ? '#4caf50' : 'rgba(201,168,76,0.15)',

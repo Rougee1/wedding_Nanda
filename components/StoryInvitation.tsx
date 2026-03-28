@@ -48,10 +48,10 @@ function SlidePanel({ children, className = '', idx, active }: { children: React
           />
           <div className="absolute inset-0" style={{
             background: `linear-gradient(to bottom,
-              rgba(10, 5, 8, 0.15) 0%,
-              rgba(10, 5, 8, 0.05) 30%,
-              rgba(10, 5, 8, 0.25) 60%,
-              rgba(10, 5, 8, 0.85) 100%)`,
+              rgba(6, 3, 5, 0.45) 0%,
+              rgba(6, 3, 5, 0.40) 30%,
+              rgba(6, 3, 5, 0.55) 60%,
+              rgba(6, 3, 5, 0.90) 100%)`,
           }} />
         </>
       )}
@@ -154,7 +154,7 @@ function Slide0Content({ guest, onOpen }: { guest: string; onOpen: () => void })
       </motion.p>
 
       <motion.p
-        className="text-white/70 font-serif text-base md:text-lg leading-relaxed"
+        className="text-white/85 font-serif text-base md:text-lg leading-relaxed"
         initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 1.0, duration: 0.8 }}
       >
@@ -233,7 +233,7 @@ function Slide2Content() {
 
       <Divider />
 
-      <p className="text-white/50 italic leading-relaxed text-sm md:text-base">
+      <p className="text-white/75 italic leading-relaxed text-sm md:text-base">
         &ldquo;And among His Signs is this, that He created for you wives from among yourselves, that you may find repose in them, and He has put between you affection and mercy.&rdquo;
       </p>
 
@@ -260,14 +260,14 @@ function Slide3Content() {
 
       <div className="mt-6">
         <h2 className="font-serif text-2xl md:text-3xl text-white font-light">{config.couple.groom.full}</h2>
-        <p className="text-white/40 text-xs md:text-sm mt-1 font-sans">{config.couple.groom.parents}</p>
+        <p className="text-white/65 text-xs md:text-sm mt-1 font-sans">{config.couple.groom.parents}</p>
       </div>
 
       <p className="font-serif text-lg my-5" style={{ color: GOLD }}>and</p>
 
       <div>
         <h2 className="font-serif text-2xl md:text-3xl text-white font-light">{config.couple.bride.full}</h2>
-        <p className="text-white/40 text-xs md:text-sm mt-1 font-sans">{config.couple.bride.parents}</p>
+        <p className="text-white/65 text-xs md:text-sm mt-1 font-sans">{config.couple.bride.parents}</p>
       </div>
     </div>
   )
@@ -283,7 +283,7 @@ function Slide4Content() {
 
       <h2 className="font-serif text-2xl md:text-3xl text-white font-light mb-4">{config.venue.name}</h2>
 
-      <p className="text-white/50 text-sm leading-relaxed mb-6 max-w-sm mx-auto">
+      <p className="text-white/75 text-sm leading-relaxed mb-6 max-w-sm mx-auto">
         {config.venue.fullAddress}
       </p>
 
@@ -323,7 +323,7 @@ function Slide5Content() {
 
       {config.dressCode.groups.map((group) => (
         <div key={group.label} className="mb-8 last:mb-0">
-          <p className="text-white/50 text-xs uppercase tracking-[0.3em] font-sans mb-4">{group.label}</p>
+          <p className="text-white/70 text-xs uppercase tracking-[0.3em] font-sans mb-4">{group.label}</p>
           <div className="flex items-center justify-center gap-6">
             {group.colors.map((c) => (
               <div key={c.name} className="flex flex-col items-center gap-2">
@@ -331,7 +331,7 @@ function Slide5Content() {
                   className="w-14 h-14 md:w-16 md:h-16 rounded-full shadow-lg ring-1 ring-white/10"
                   style={{ backgroundColor: c.hex }}
                 />
-                <span className="text-[9px] uppercase tracking-[0.2em] font-sans text-white/40">
+                <span className="text-[9px] uppercase tracking-[0.2em] font-sans text-white/65">
                   {c.name}
                 </span>
               </div>
