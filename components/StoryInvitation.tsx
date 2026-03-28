@@ -20,22 +20,24 @@ const SLIDE_IMAGES = [
 ]
 
 const BG = 'linear-gradient(-45deg, #060508, #100a12, #140c10, #0a080e)'
+const TOTAL_SLIDES = 8
+const COOLDOWN_MS = 700
 
-const TOTAL_SLIDES = 8 // 0..7
-const COOLDOWN_MS = 800
-
-// ─── Reusable animated section ───────────────────────────────────────────────
-function Section({ children, className = '', idx, id }: { children: ReactNode; className?: string; idx: number; id: string }) {
+// ─── Reusable slide wrapper ──────────────────────────────────────────────────
+function SlidePanel({ children, className = '', idx, active }: { children: ReactNode; className?: string; idx: number; active: boolean }) {
   const ref = useRef<HTMLDivElement>(null)
-  const inView = useInView(ref, { once: true, amount: 0.35 })
+  const [seen, setSeen] = useState(false)
+
+  useEffect(() => {
+    if (active && !seen) setSeen(true)
+  }, [active, seen])
 
   const img = SLIDE_IMAGES[idx] ?? null
 
   return (
-    <section
+    <div
       ref={ref}
-      id={id}
-      className={`relative h-screen w-full flex flex-col justify-center overflow-hidden shrink-0 ${className}`}
+      className={`absolute inset-0 w-full h-full flex flex-col justify-center overflow-hidden ${className}`}
     >
       <div className="absolute inset-0" style={{ background: BG }} />
       {img && (
@@ -55,14 +57,14 @@ function Section({ children, className = '', idx, id }: { children: ReactNode; c
       )}
 
       <motion.div
-        className="relative z-10"
-        initial={{ opacity: 0, y: 40 }}
-        animate={inView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+        className="relative z-10 h-full flex flex-col justify-center"
+        initial={{ opacity: 0, y: 30 }}
+        animate={seen ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
       >
         {children}
       </motion.div>
-    </section>
+    </div>
   )
 }
 
@@ -99,110 +101,84 @@ function useCountdown(targetISO: string) {
   return left
 }
 
-// ─── Progress dots (right side) ──────────────────────────────────────────────
-function ProgressDots({ current, total }: { current: number; total: number }) {
+// ─── Progress dots ───────────────────────────────────────────────────────────
+function ProgressDots({ current, total, onDotClick }: { current: number; total: number; onDotClick: (i: number) => void }) {
   return (
-    <div className="fixed right-3 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-2">
+    <div className="fixed right-3 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-2.5">
       {Array.from({ length: total }, (_, i) => (
-        <motion.div
+        <button
           key={i}
-          className="rounded-full"
-          animate={{
-            width: i === current ? 8 : 5,
-            height: i === current ? 8 : 5,
-            backgroundColor: i === current ? GOLD : 'rgba(255,255,255,0.25)',
-          }}
-          transition={{ duration: 0.3 }}
-        />
+          type="button"
+          onClick={() => onDotClick(i)}
+          className="p-1 outline-none"
+          aria-label={`Go to slide ${i + 1}`}
+        >
+          <motion.div
+            className="rounded-full"
+            animate={{
+              width: i === current ? 8 : 5,
+              height: i === current ? 8 : 5,
+              backgroundColor: i === current ? GOLD : 'rgba(255,255,255,0.3)',
+            }}
+            transition={{ duration: 0.25 }}
+          />
+        </button>
       ))}
     </div>
   )
 }
 
-// ─── Slide 0 — Greeting + "Open Invitation" ─────────────────────────────────
-function Slide0({ guest, onOpen }: { guest: string; onOpen: () => void }) {
+// ─── Slide 0 — Greeting ─────────────────────────────────────────────────────
+function Slide0Content({ guest, onOpen }: { guest: string; onOpen: () => void }) {
   return (
-    <section
-      id="slide-0"
-      className="relative h-screen w-full flex flex-col justify-center items-center shrink-0"
-      style={{ background: BG }}
-    >
-      {SLIDE_IMAGES[0] && (
-        <>
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url('${SLIDE_IMAGES[0]}')`, opacity: 0.65 }}
-          />
-          <div className="absolute inset-0" style={{
-            background: `linear-gradient(to bottom, rgba(10,5,8,0.3) 0%, rgba(10,5,8,0.1) 40%, rgba(10,5,8,0.8) 100%)`,
-          }} />
-        </>
-      )}
+    <div className="text-center px-6 max-w-lg mx-auto">
+      <motion.p
+        className="font-arabic text-2xl md:text-3xl leading-relaxed mb-6"
+        style={{ color: GOLD }}
+        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3, duration: 0.9 }}
+      >
+        بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
+      </motion.p>
 
-      <div className="relative z-10 text-center px-6 max-w-lg">
-        <motion.p
-          className="font-arabic text-2xl md:text-3xl leading-relaxed mb-6"
-          style={{ color: GOLD }}
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.9 }}
-        >
-          بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
-        </motion.p>
+      <motion.p
+        className="text-white/80 font-serif text-lg md:text-xl leading-relaxed mb-2"
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+        transition={{ delay: 0.7, duration: 0.8 }}
+      >
+        {guest ? (
+          <>Dear <em className="not-italic" style={{ color: GOLD }}>{guest}</em>,</>
+        ) : (
+          <>Dear Guest,</>
+        )}
+      </motion.p>
 
-        <motion.p
-          className="text-white/80 font-serif text-lg md:text-xl leading-relaxed mb-2"
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          transition={{ delay: 0.7, duration: 0.8 }}
-        >
-          {guest ? (
-            <>Dear <em className="not-italic" style={{ color: GOLD }}>{guest}</em>,</>
-          ) : (
-            <>Dear Guest,</>
-          )}
-        </motion.p>
+      <motion.p
+        className="text-white/70 font-serif text-base md:text-lg leading-relaxed"
+        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.0, duration: 0.8 }}
+      >
+        We invite you to the nikkah of{' '}
+        <em className="not-italic" style={{ color: GOLD }}>Redoine</em> and{' '}
+        <em className="not-italic" style={{ color: GOLD }}>Nanda</em>
+      </motion.p>
 
-        <motion.p
-          className="text-white/70 font-serif text-base md:text-lg leading-relaxed"
-          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.0, duration: 0.8 }}
-        >
-          We invite you to the nikkah of{' '}
-          <em className="not-italic" style={{ color: GOLD }}>Redoine</em> and{' '}
-          <em className="not-italic" style={{ color: GOLD }}>Nanda</em>
-        </motion.p>
-
-        <motion.button
-          type="button"
-          onClick={onOpen}
-          className="mt-10 px-8 py-3 rounded-full text-[11px] uppercase tracking-[0.3em] font-sans font-semibold transition-all hover:scale-105"
-          style={{ backgroundColor: GOLD, color: '#0a0005' }}
-          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.5, duration: 0.7 }}
-        >
-          Open Invitation
-        </motion.button>
-
-        <motion.div
-          className="mt-8"
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          transition={{ delay: 2.2 }}
-        >
-          <motion.div
-            animate={{ y: [0, 6, 0] }}
-            transition={{ repeat: Infinity, duration: 1.7, ease: 'easeInOut' }}
-          >
-            <svg className="w-5 h-5 mx-auto" style={{ color: GOLD_DIM }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 14l-7 7-7-7" />
-            </svg>
-          </motion.div>
-        </motion.div>
-      </div>
-    </section>
+      <motion.button
+        type="button"
+        onClick={onOpen}
+        className="mt-10 px-8 py-3 rounded-full text-[11px] uppercase tracking-[0.3em] font-sans font-semibold transition-all hover:scale-105"
+        style={{ backgroundColor: GOLD, color: '#0a0005' }}
+        initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.5, duration: 0.7 }}
+      >
+        Open Invitation
+      </motion.button>
+    </div>
   )
 }
 
 // ─── Slide 1 — Names + Date + Countdown ─────────────────────────────────────
-function Slide1() {
+function Slide1Content() {
   const cd = useCountdown(config.event.date.dateISO)
 
   const unit = (val: number, label: string) => (
@@ -244,7 +220,7 @@ function Slide1() {
 }
 
 // ─── Slide 2 — Surah Ar-Rum ─────────────────────────────────────────────────
-function Slide2() {
+function Slide2Content() {
   return (
     <div className="text-center px-6 py-16 max-w-2xl mx-auto">
       <p className="text-[9px] uppercase tracking-[0.55em] font-sans mb-6" style={{ color: GOLD_DIM }}>
@@ -269,7 +245,7 @@ function Slide2() {
 }
 
 // ─── Slide 3 — Full invitation with parents ──────────────────────────────────
-function Slide3() {
+function Slide3Content() {
   return (
     <div className="text-center px-6 py-16 max-w-lg mx-auto">
       <p className="text-[9px] uppercase tracking-[0.55em] font-sans mb-8" style={{ color: GOLD_DIM }}>
@@ -297,8 +273,8 @@ function Slide3() {
   )
 }
 
-// ─── Slide 4 — Venue + Google Maps + Time ────────────────────────────────────
-function Slide4() {
+// ─── Slide 4 — Venue ─────────────────────────────────────────────────────────
+function Slide4Content() {
   return (
     <div className="text-center px-6 py-16 max-w-lg mx-auto">
       <p className="text-[9px] uppercase tracking-[0.55em] font-sans mb-6" style={{ color: GOLD_DIM }}>
@@ -338,7 +314,7 @@ function Slide4() {
 }
 
 // ─── Slide 5 — Dress Code ────────────────────────────────────────────────────
-function Slide5() {
+function Slide5Content() {
   return (
     <div className="text-center px-6 py-16 max-w-lg mx-auto">
       <p className="text-[9px] uppercase tracking-[0.55em] font-sans mb-8" style={{ color: GOLD_DIM }}>
@@ -368,7 +344,7 @@ function Slide5() {
 }
 
 // ─── Slide 6 — RSVP form ────────────────────────────────────────────────────
-function Slide6({ guest }: { guest: string }) {
+function Slide6Content({ guest }: { guest: string }) {
   const [name, setName] = useState(guest)
   const [email, setEmail] = useState('')
   const [presence, setPresence] = useState('')
@@ -453,20 +429,18 @@ function Slide6({ guest }: { guest: string }) {
   )
 }
 
-// ─── Slide 7 — Video ────────────────────────────────────────────────────────
-function Slide7() {
+// ─── Slide 7 — Video ─────────────────────────────────────────────────────────
+function Slide7Content({ active }: { active: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const sectionRef = useRef<HTMLDivElement>(null)
   const [muted, setMuted] = useState(true)
   const [playing, setPlaying] = useState(false)
   const [showUnmute, setShowUnmute] = useState(false)
   const [error, setError] = useState(false)
-  const inView = useInView(sectionRef, { amount: 0.5 })
 
   const videoSrc = encodeURI(config.invitationVideo.src)
 
   useEffect(() => {
-    if (!inView) return
+    if (!active) return
     const v = videoRef.current
     if (!v || playing) return
     v.muted = true
@@ -478,7 +452,7 @@ function Slide7() {
         setTimeout(() => setShowUnmute(true), 1000)
       })
       .catch(() => {})
-  }, [inView, playing])
+  }, [active, playing])
 
   const handleUnmute = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -504,11 +478,8 @@ function Slide7() {
   }
 
   return (
-    <section
-      ref={sectionRef}
-      id="slide-7"
-      className="relative h-screen w-full flex items-center justify-center shrink-0 bg-black"
-    >
+    <>
+      <div className="absolute inset-0 bg-black" />
       <video
         ref={videoRef}
         className="absolute inset-0 w-full h-full object-cover"
@@ -518,25 +489,27 @@ function Slide7() {
       />
 
       {!playing && (
-        <button
-          type="button"
-          className="relative z-10 flex flex-col items-center gap-4"
-          onClick={handleTap}
-        >
-          <motion.span
-            className="rounded-full p-5"
-            style={{ backgroundColor: 'rgba(201,168,76,0.25)', border: `2px solid ${GOLD_BORDER}` }}
-            animate={{ scale: [1, 1.08, 1] }}
-            transition={{ repeat: Infinity, duration: 1.8 }}
+        <div className="relative z-10 flex flex-col items-center justify-center h-full">
+          <button
+            type="button"
+            className="flex flex-col items-center gap-4"
+            onClick={handleTap}
           >
-            <svg className="w-14 h-14" fill="currentColor" viewBox="0 0 24 24" style={{ color: GOLD }}>
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          </motion.span>
-          <span className="text-xs uppercase tracking-[0.35em] font-sans" style={{ color: 'rgba(201,168,76,0.9)' }}>
-            {error ? 'Video not available — Tap to retry' : 'Tap to play'}
-          </span>
-        </button>
+            <motion.span
+              className="rounded-full p-5"
+              style={{ backgroundColor: 'rgba(201,168,76,0.25)', border: `2px solid ${GOLD_BORDER}` }}
+              animate={{ scale: [1, 1.08, 1] }}
+              transition={{ repeat: Infinity, duration: 1.8 }}
+            >
+              <svg className="w-14 h-14" fill="currentColor" viewBox="0 0 24 24" style={{ color: GOLD }}>
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </motion.span>
+            <span className="text-xs uppercase tracking-[0.35em] font-sans" style={{ color: 'rgba(201,168,76,0.9)' }}>
+              {error ? 'Video not available — Tap to retry' : 'Tap to play'}
+            </span>
+          </button>
+        </div>
       )}
 
       {showUnmute && muted && (
@@ -553,70 +526,74 @@ function Slide7() {
           <span className="text-xs uppercase tracking-[0.25em] font-sans text-white/80">Tap to unmute</span>
         </motion.button>
       )}
-    </section>
+    </>
   )
 }
 
-// ─── Main: programmatic one-slide-at-a-time scroll ──────────────────────────
+// ─── Main: transform-based full-screen slide controller ─────────────────────
 export default function StoryInvitation() {
   const params = useSearchParams()
   const guest = params.get('n') ?? params.get('invite') ?? ''
   const [opened, setOpened] = useState(false)
   const [current, setCurrent] = useState(0)
-  const scrollRef = useRef<HTMLDivElement>(null)
   const lockRef = useRef(false)
   const touchYRef = useRef<number | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const maxSlide = opened ? TOTAL_SLIDES - 1 : 0
 
-  const scrollTo = useCallback((index: number) => {
+  const goTo = useCallback((index: number) => {
     if (lockRef.current) return
     const clamped = Math.max(0, Math.min(index, maxSlide))
     if (clamped === current) return
-
     lockRef.current = true
     setCurrent(clamped)
-
-    const el = scrollRef.current?.querySelector(`#slide-${clamped}`)
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
-
     setTimeout(() => { lockRef.current = false }, COOLDOWN_MS)
   }, [current, maxSlide])
 
-  const goNext = useCallback(() => scrollTo(current + 1), [current, scrollTo])
-  const goPrev = useCallback(() => scrollTo(current - 1), [current, scrollTo])
+  const goNext = useCallback(() => goTo(current + 1), [current, goTo])
+  const goPrev = useCallback(() => goTo(current - 1), [current, goTo])
 
-  // Wheel handler — one slide per scroll gesture
+  // Prevent all native scroll + pull-to-refresh
   useEffect(() => {
-    const container = scrollRef.current
-    if (!container) return
+    const el = containerRef.current
+    if (!el) return
 
-    const onWheel = (e: WheelEvent) => {
+    const preventScroll = (e: TouchEvent) => {
+      // Allow interaction with form inputs
+      const tag = (e.target as HTMLElement).tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
       e.preventDefault()
-      if (lockRef.current) return
-      if (e.deltaY > 20) goNext()
-      else if (e.deltaY < -20) goPrev()
     }
 
-    container.addEventListener('wheel', onWheel, { passive: false })
-    return () => container.removeEventListener('wheel', onWheel)
+    const preventWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      if (lockRef.current) return
+      if (e.deltaY > 15) goNext()
+      else if (e.deltaY < -15) goPrev()
+    }
+
+    el.addEventListener('touchmove', preventScroll, { passive: false })
+    el.addEventListener('wheel', preventWheel, { passive: false })
+    return () => {
+      el.removeEventListener('touchmove', preventScroll)
+      el.removeEventListener('wheel', preventWheel)
+    }
   }, [goNext, goPrev])
 
-  // Touch handlers — swipe up/down
-  const onTouchStart = (e: React.TouchEvent) => {
+  // Touch swipe detection
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
     touchYRef.current = e.touches[0].clientY
-  }
+  }, [])
 
-  const onTouchEnd = (e: React.TouchEvent) => {
+  const onTouchEnd = useCallback((e: React.TouchEvent) => {
     if (touchYRef.current === null) return
     const dy = touchYRef.current - e.changedTouches[0].clientY
     touchYRef.current = null
     if (lockRef.current) return
-    if (dy > 50) goNext()
-    else if (dy < -50) goPrev()
-  }
+    if (dy > 40) goNext()
+    else if (dy < -40) goPrev()
+  }, [goNext, goPrev])
 
   // Keyboard
   useEffect(() => {
@@ -628,33 +605,72 @@ export default function StoryInvitation() {
     return () => window.removeEventListener('keydown', onKey)
   }, [goNext, goPrev])
 
-  const handleOpen = () => {
+  const handleOpen = useCallback(() => {
     setOpened(true)
-    setTimeout(() => scrollTo(1), 100)
-  }
+    lockRef.current = true
+    setCurrent(1)
+    setTimeout(() => { lockRef.current = false }, COOLDOWN_MS)
+  }, [])
 
   return (
     <div
-      ref={scrollRef}
-      className="h-screen overflow-hidden"
+      ref={containerRef}
+      className="fixed inset-0 w-full h-full overflow-hidden touch-none"
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      {opened && <ProgressDots current={current} total={TOTAL_SLIDES} />}
+      {opened && <ProgressDots current={current} total={TOTAL_SLIDES} onDotClick={goTo} />}
 
-      <Slide0 guest={guest} onOpen={handleOpen} />
+      {/* All slides stacked, only the current one is visible via translateY */}
+      <div
+        className="w-full transition-transform duration-700 ease-in-out"
+        style={{
+          height: `${TOTAL_SLIDES * 100}vh`,
+          transform: `translateY(-${current * 100}vh)`,
+        }}
+      >
+        {/* Slide 0 */}
+        <div className="relative w-full h-screen">
+          <SlidePanel idx={0} active={current === 0}>
+            <Slide0Content guest={guest} onOpen={handleOpen} />
+          </SlidePanel>
+        </div>
 
-      {opened && (
-        <>
-          <Section idx={1} id="slide-1"><Slide1 /></Section>
-          <Section idx={2} id="slide-2"><Slide2 /></Section>
-          <Section idx={3} id="slide-3"><Slide3 /></Section>
-          <Section idx={4} id="slide-4"><Slide4 /></Section>
-          <Section idx={5} id="slide-5"><Slide5 /></Section>
-          <Section idx={6} id="slide-6"><Slide6 guest={guest} /></Section>
-          <Slide7 />
-        </>
-      )}
+        {/* Slides 1-6 — only rendered after open */}
+        {opened ? (
+          <>
+            <div className="relative w-full h-screen">
+              <SlidePanel idx={1} active={current === 1}><Slide1Content /></SlidePanel>
+            </div>
+            <div className="relative w-full h-screen">
+              <SlidePanel idx={2} active={current === 2}><Slide2Content /></SlidePanel>
+            </div>
+            <div className="relative w-full h-screen">
+              <SlidePanel idx={3} active={current === 3}><Slide3Content /></SlidePanel>
+            </div>
+            <div className="relative w-full h-screen">
+              <SlidePanel idx={4} active={current === 4}><Slide4Content /></SlidePanel>
+            </div>
+            <div className="relative w-full h-screen">
+              <SlidePanel idx={5} active={current === 5}><Slide5Content /></SlidePanel>
+            </div>
+            <div className="relative w-full h-screen">
+              <SlidePanel idx={6} active={current === 6}><Slide6Content guest={guest} /></SlidePanel>
+            </div>
+            <div className="relative w-full h-screen">
+              <div className="absolute inset-0">
+                <Slide7Content active={current === 7} />
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            {Array.from({ length: TOTAL_SLIDES - 1 }, (_, i) => (
+              <div key={i} className="w-full h-screen" />
+            ))}
+          </>
+        )}
+      </div>
     </div>
   )
 }
