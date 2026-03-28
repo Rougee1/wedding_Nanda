@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, FormEvent, ReactNode } from 'react'
+import { useState, useEffect, useRef, useCallback, FormEvent, ReactNode } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { motion, useInView } from 'framer-motion'
 import { config } from '@/app/config'
@@ -21,8 +21,11 @@ const SLIDE_IMAGES = [
 
 const BG = 'linear-gradient(-45deg, #060508, #100a12, #140c10, #0a080e)'
 
-// ─── Reusable animated section (triggers when scrolled into view) ─────────────
-function Section({ children, className = '', idx }: { children: ReactNode; className?: string; idx: number }) {
+const TOTAL_SLIDES = 8 // 0..7
+const COOLDOWN_MS = 800
+
+// ─── Reusable animated section ───────────────────────────────────────────────
+function Section({ children, className = '', idx, id }: { children: ReactNode; className?: string; idx: number; id: string }) {
   const ref = useRef<HTMLDivElement>(null)
   const inView = useInView(ref, { once: true, amount: 0.35 })
 
@@ -31,7 +34,8 @@ function Section({ children, className = '', idx }: { children: ReactNode; class
   return (
     <section
       ref={ref}
-      className={`relative min-h-screen w-full flex flex-col justify-center overflow-hidden snap-start ${className}`}
+      id={id}
+      className={`relative h-screen w-full flex flex-col justify-center overflow-hidden shrink-0 ${className}`}
     >
       <div className="absolute inset-0" style={{ background: BG }} />
       {img && (
@@ -95,11 +99,32 @@ function useCountdown(targetISO: string) {
   return left
 }
 
+// ─── Progress dots (right side) ──────────────────────────────────────────────
+function ProgressDots({ current, total }: { current: number; total: number }) {
+  return (
+    <div className="fixed right-3 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-2">
+      {Array.from({ length: total }, (_, i) => (
+        <motion.div
+          key={i}
+          className="rounded-full"
+          animate={{
+            width: i === current ? 8 : 5,
+            height: i === current ? 8 : 5,
+            backgroundColor: i === current ? GOLD : 'rgba(255,255,255,0.25)',
+          }}
+          transition={{ duration: 0.3 }}
+        />
+      ))}
+    </div>
+  )
+}
+
 // ─── Slide 0 — Greeting + "Open Invitation" ─────────────────────────────────
 function Slide0({ guest, onOpen }: { guest: string; onOpen: () => void }) {
   return (
     <section
-      className="relative min-h-screen w-full flex flex-col justify-center items-center snap-start"
+      id="slide-0"
+      className="relative h-screen w-full flex flex-col justify-center items-center shrink-0"
       style={{ background: BG }}
     >
       {SLIDE_IMAGES[0] && (
@@ -481,7 +506,8 @@ function Slide7() {
   return (
     <section
       ref={sectionRef}
-      className="relative min-h-screen w-full flex items-center justify-center snap-start bg-black"
+      id="slide-7"
+      className="relative h-screen w-full flex items-center justify-center shrink-0 bg-black"
     >
       <video
         ref={videoRef}
@@ -531,36 +557,101 @@ function Slide7() {
   )
 }
 
-// ─── Main: vertical scroll container (Instagram-style) ──────────────────────
+// ─── Main: programmatic one-slide-at-a-time scroll ──────────────────────────
 export default function StoryInvitation() {
   const params = useSearchParams()
   const guest = params.get('n') ?? params.get('invite') ?? ''
   const [opened, setOpened] = useState(false)
+  const [current, setCurrent] = useState(0)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const lockRef = useRef(false)
+  const touchYRef = useRef<number | null>(null)
+
+  const maxSlide = opened ? TOTAL_SLIDES - 1 : 0
+
+  const scrollTo = useCallback((index: number) => {
+    if (lockRef.current) return
+    const clamped = Math.max(0, Math.min(index, maxSlide))
+    if (clamped === current) return
+
+    lockRef.current = true
+    setCurrent(clamped)
+
+    const el = scrollRef.current?.querySelector(`#slide-${clamped}`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+
+    setTimeout(() => { lockRef.current = false }, COOLDOWN_MS)
+  }, [current, maxSlide])
+
+  const goNext = useCallback(() => scrollTo(current + 1), [current, scrollTo])
+  const goPrev = useCallback(() => scrollTo(current - 1), [current, scrollTo])
+
+  // Wheel handler — one slide per scroll gesture
+  useEffect(() => {
+    const container = scrollRef.current
+    if (!container) return
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      if (lockRef.current) return
+      if (e.deltaY > 20) goNext()
+      else if (e.deltaY < -20) goPrev()
+    }
+
+    container.addEventListener('wheel', onWheel, { passive: false })
+    return () => container.removeEventListener('wheel', onWheel)
+  }, [goNext, goPrev])
+
+  // Touch handlers — swipe up/down
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchYRef.current = e.touches[0].clientY
+  }
+
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchYRef.current === null) return
+    const dy = touchYRef.current - e.changedTouches[0].clientY
+    touchYRef.current = null
+    if (lockRef.current) return
+    if (dy > 50) goNext()
+    else if (dy < -50) goPrev()
+  }
+
+  // Keyboard
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); goNext() }
+      if (e.key === 'ArrowUp') { e.preventDefault(); goPrev() }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [goNext, goPrev])
 
   const handleOpen = () => {
     setOpened(true)
-    setTimeout(() => {
-      scrollRef.current?.querySelector('#section-1')?.scrollIntoView({ behavior: 'smooth' })
-    }, 100)
+    setTimeout(() => scrollTo(1), 100)
   }
 
   return (
     <div
       ref={scrollRef}
-      className="h-screen overflow-y-scroll snap-y snap-proximity"
-      style={{ scrollBehavior: 'smooth' }}
+      className="h-screen overflow-hidden"
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
     >
+      {opened && <ProgressDots current={current} total={TOTAL_SLIDES} />}
+
       <Slide0 guest={guest} onOpen={handleOpen} />
 
       {opened && (
         <>
-          <Section idx={1}><div id="section-1"><Slide1 /></div></Section>
-          <Section idx={2}><Slide2 /></Section>
-          <Section idx={3}><Slide3 /></Section>
-          <Section idx={4}><Slide4 /></Section>
-          <Section idx={5}><Slide5 /></Section>
-          <Section idx={6}><Slide6 guest={guest} /></Section>
+          <Section idx={1} id="slide-1"><Slide1 /></Section>
+          <Section idx={2} id="slide-2"><Slide2 /></Section>
+          <Section idx={3} id="slide-3"><Slide3 /></Section>
+          <Section idx={4} id="slide-4"><Slide4 /></Section>
+          <Section idx={5} id="slide-5"><Slide5 /></Section>
+          <Section idx={6} id="slide-6"><Slide6 guest={guest} /></Section>
           <Slide7 />
         </>
       )}
