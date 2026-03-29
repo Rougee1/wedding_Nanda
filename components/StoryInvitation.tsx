@@ -482,7 +482,7 @@ function Slide7Content({ active }: { active: boolean }) {
       <div className="absolute inset-0 bg-black" />
       <video
         ref={videoRef}
-        className="absolute inset-0 w-full h-full object-cover"
+        className="absolute inset-0 w-full h-full object-contain"
         playsInline muted preload="auto"
         src={videoSrc}
         onError={() => setError(true)}
