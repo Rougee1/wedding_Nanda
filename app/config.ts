@@ -47,7 +47,7 @@ export const config = {
   },
 
   invitationVideo: {
-    src: '/assets/Wedding_Nanda_Final.mov',
+    src: '/assets/wedding-final.mp4',
   },
 
   dressCode: {
